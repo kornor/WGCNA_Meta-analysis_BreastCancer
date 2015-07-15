@@ -22,15 +22,18 @@ library(ggplot2)
 library(gplots)
 library(RColorBrewer)
 
-## #########################################  This can be skipped - move down to load prepped file
+## ######################################################################################
+#########****** START HERE MOTHER RUSSIA! ****** ###############################
 ### Load exp file & traits & clinical
 
-exp <- read.table("Exp_final_METABRIC.txt", sep = "\t", header = TRUE, row.names = 1)
-exp <- as.data.frame(t(exp))
+exp <- read.table("Exp_trimmed_METABRIC.txt", sep = "\t", 
+                  header = TRUE, row.names = 1)
 
-clin <- read.table("Clinical_METABRIC.txt", sep = "\t", header = TRUE, row.names = 1)
+clin <- read.table("Clinical_METABRIC.txt", sep = "\t", header = TRUE, 
+                   row.names = 1)
 
-traits <- read.table("Traits_METABRIC.txt", sep = "\t", header = TRUE, row.names = 1)
+traits <- read.table("Traits_trimmed_METABRIC.txt", sep = "\t", 
+                     header = TRUE, row.names = 1)
 
 ## look for genes with missing values
 ##Exclude genes with results for less than 400 samples; exclude samples with 
@@ -98,12 +101,11 @@ legend("right",legend=levels(factor(Pam50)),
 ## Might remove the 4 outliers on the right
 ## Plot a line to show the cut
 
-abline(h = 210, col = "red");
+abline(h = 110, col = "red");
 
 # Determine clusters under the line (use h from above)
 
-#clust = cutreeStatic(sampleTree, cutHeight = 300, minSize = 10)
-clust = cutreeStatic(sampleTree, cutHeight = 210, minSize = 10)
+clust = cutreeStatic(sampleTree, cutHeight = 110, minSize = 10)
 table(clust)
 
 # clust 1 contains the samples we want to keep.
@@ -118,7 +120,7 @@ nSamples = nrow(datExpr)
 
 Samples = rownames(datExpr);
 traitRows = match(Samples, rownames(traits));
-datTraits = methTraits[traitRows,];
+datTraits = traits[traitRows,];
 
 
 datClin = clin[traitRows,]

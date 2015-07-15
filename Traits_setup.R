@@ -68,3 +68,13 @@ traits_exp$ER <- er_ave$`ER metagene`
 ### Export traits file
 
 write.table(traits_exp, "Traits_METABRIC.txt", sep ="\t")
+
+clin <- read.table("Clinical_METABRIC.txt", sep = "\t", header = TRUE, row.names = 1)
+
+list <- intersect(rownames(exp), rownames(clin))
+exp1 <- exp[list,]
+traits1 <- traits[list,]
+
+
+write.table(exp1, "Exp_trimmed_METABRIC.txt", sep = "\t")
+write.table(traits1, "Traits_trimmed_METABRIC.txt", sep = "\t")
