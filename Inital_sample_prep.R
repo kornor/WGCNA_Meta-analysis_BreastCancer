@@ -26,14 +26,15 @@ library(RColorBrewer)
 #########****** START HERE MOTHER RUSSIA! ****** ###############################
 ### Load exp file & traits & clinical
 
-exp <- read.table("Exp_trimmed_METABRIC.txt", sep = "\t", 
+exp <- read.table("Exp_final_METABRIC.txt", sep = "\t", 
                   header = TRUE, row.names = 1)
 
-clin <- read.table("Clinical_METABRIC.txt", sep = "\t", header = TRUE, 
+clin <- read.table("Clinical_final_METABRIC.txt", sep = "\t", header = TRUE, 
                    row.names = 1)
 
 traits <- read.table("Traits_trimmed_METABRIC.txt", sep = "\t", 
                      header = TRUE, row.names = 1)
+
 
 ## look for genes with missing values
 ##Exclude genes with results for less than 400 samples; exclude samples with 
@@ -86,7 +87,7 @@ ColorDendrogram(sampleTree, y = PamColours,
                 sub="", xlab="", 
                 labels = FALSE, branchlength = 35)
 
-legend("bottomright",legend=levels(factor(Pam50)),
+legend("topright",legend=levels(factor(Pam50)),
        fill = (c("turquoise","blue", "brown", "yellow", "green" )), cex = 1)
 ##########   Different way?
 
