@@ -9,9 +9,12 @@ library(dplyr)
 library(flashClust)
 library(ggplot2)
 library(gplots)
+library(ggdendro)
 library(pvclust)
 library(lattice)
 library(extrafont)
+library(tidyverse)
+library(reshape)
 loadfonts()
 ##############
 
@@ -149,19 +152,25 @@ load(file = "Meth_ME_correlations_all_TCGA.RData")
 ## use: dist method euclidean
 ## clustering method complete
 
-methDist <- dist(t_moduleTraitCor)
+methDist <- dist(t(moduleTraitCor))
 methClust <- hclust(methDist, "complete")
 
 plot(methClust,labels = FALSE, main='Methylation of correlations dendro')
 ## save this dendro file 
 
 #### want 10 clusters
-groups_x <- cutree(methClust, 10.5)
+groups_x <- cutree(methClust, k = 10)
 count(groups_x)  ## good, there is 10
 factor_x <- as.factor(groups_x)
 
+
+mat_cormat3 <- as.data.frame(t_cormat3)
+mat_cormat3$Cluster_allocation <- groups_x
+table(mat_cormat3$Cluster_allocation)
+
+write.table(mat_cormat3, "Meth_Mod_Cluster_Correlations.txt", sep = "\t")
 ######## This splits the data into an array of dataframes based on clusters
-cluster_array <- array(split(t_moduleTraitCor, factor_x))
+cluster_array <- array(split(mat_cormat3), groups_x)
 dim(cluster_array)
 ### write out this?
 
@@ -169,9 +178,10 @@ for (i in 1:dim(cluster_array)){
   write.csv(cluster_array[[i]], paste("Clusters_whole_correlation_", i, ".csv", sep="")) 
 } 
 
+t_cormat3 <- t(cormat3)
 
 ### create a summary of the values from each cluster  in green?
-summary_array<-tapply(t_moduleTraitCor$MEgreen,factor_x,summary)
+summary_array<-tapply(t_cormat3$MEgreen,factor_x,summary)
 complete_summary_array <- do.call(rbind, summary_array)
 write.table(complete_summary_array, file = "Cluster_summary_GreenModule.txt", sep = "\t")
 
@@ -179,18 +189,19 @@ write.table(complete_summary_array, file = "Cluster_summary_GreenModule.txt", se
 
 save(methClust, methDist, cluster_array, complete_summary_array, file = "Clustering_all_correlations.RData")
 
+save(methClust, methDist, cluster_array, file = "Meth_Dendro_Clusters.RData")
 
 ############# validating clusters
 
 library(NbClust)
-nb <- NbClust(t_moduleTraitCor, distance = "euclidean", min.nc = 2,
+nb <- NbClust(t_cormat3, distance = "euclidean", min.nc = 2,
               max.nc = 10, method = "complete", index ="all")
 # Visualize the result
 library(factoextra)
 fviz_nbclust(nb) + theme_minimal()
 
 # K-means clustering (k = number of clusters you want)
-km.res <- eclust(t_moduleTraitCor, "kmeans", k = 7,
+km.res <- eclust(t_cormat3, "kmeans", k = 10,
                  nstart = 25, graph = FALSE)
 # k-means group number of each observation
 km.res$cluster
@@ -198,7 +209,7 @@ km.res$cluster
 fviz_cluster(km.res, geom = "point", frame.type = "norm")
 
 # PAM clustering
-pam.res <- eclust(t_moduleTraitCor, "pam", k = 2, graph = FALSE)
+pam.res <- eclust(t_cormat3, "pam", k = 3, graph = FALSE)
 pam.res$cluster
 # Visualize pam clusters
 fviz_cluster(pam.res, geom = "point", frame.type = "norm")
@@ -213,9 +224,34 @@ write.table(frame, "K_means clustering.txt", sep = "\t")
 
 factor <- as.factor(frame$Cluster)
 
-list_c <- read.table("Cluster7_kmeans.txt", sep = "\t", header = TRUE, row.names = 1)
+list_c <- read.table("Cluster3_kmeans.txt", sep = "\t", header = TRUE, row.names = 1)
 
 comp <- intersect(rownames(clust4), rownames(list_c)) 
+
+library(cluster)
+sil <- silhouette(km.res$cluster, dist(t_cormat3))
+head(sil[, 1:3], 10)
+
+# Silhouette plot
+plot(sil)
+
+# Summary of silhouette analysis
+si.sum <- summary(sil)
+# Average silhouette width of each cluster
+si.sum$clus.avg.widths
+fviz_silhouette(sil)
+fviz_silhouette(km.res, palette = "jco", ggtheme = theme_classic())
+
+viz_sil <- fviz_silhouette(km.res, palette = "jco", ggtheme = theme_classic())
+viz_sil$layers[[2]]$aes_params$colour <- NA
+
+viz_sil + scale_y_continuous(name="Silhouette width", limits=c(-0.15, 0.80), 
+                             breaks=c(0.00,0.20, 0.40, 0.60, 0.80),
+                             labels=c("0.00" = "0.00", "0.2" = "0.25","0.4" = "0.50", "0.6" = "0.75", "0.8" = "1.0")) +
+    labs(title="Silhouette values for methylation clusters", x = "Cluster number") +
+    theme(axis.text.y = element_text(size = 18), plot.title = element_text(size=22, face = "bold"),
+     axis.title.y = element_text(size=18, face="bold"), axis.title.x = element_text(size=18, face="bold"), legend.position = "none")
+    #geom_text(aes(label = viz_sil$data$cluster))
 
 
 
@@ -421,7 +457,7 @@ fviz_dend(res.hc, rect = TRUE, show_labels = FALSE)
 #######silhouette analysis
 
 library(cluster)
-sil <- silhouette(km.res$cluster, dist(t_moduleTraitCor))
+sil <- silhouette(km.res$cluster, dist(t_cormat3))
 head(sil[, 1:3], 10)
 
 # Silhouette plot
